@@ -10,6 +10,8 @@ from utils.io_helpers import get_num_train_image
 from utils.register_dataset import register_dataset
 from utils.trainer import CustomTrainer
 
+import warnings
+warnings.filterwarnings("ignore")
 
 def get_num_iterations(epochs: int, batch_size: int, num_train: int) -> int:
     return epochs * num_train // batch_size
