@@ -19,7 +19,7 @@ def main(hparam: argparse.Namespace):
     assert hparam.config.is_file(), f"Config does not exists: {str(hparam.config)}!"
 
     cfg = get_cfg()
-    cfg.PATCH = (1024,1024)
+    cfg.PATCH = (hparam.size, hparam.size)
     cfg.merge_from_file(cfg_filename=str(hparam.config))
     cfg.DATALOADER.NUM_WORKERS = hparam.num_workers
     if hparam.weights != '':
@@ -94,6 +94,7 @@ if __name__ == '__main__':
     parser.add_argument("--batch-size", type=int, help="Batch size", default=4)
     parser.add_argument('--epochs', type=int, help="Num epochs", default=300)
     parser.add_argument('--num_workers', type=int, help="Num workers", default=4)
+    parser.add_argument('--size', type=int, help="Tile size", default=1024)
 
     args = parser.parse_args()
     print(f"Args: {args}")
