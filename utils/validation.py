@@ -274,9 +274,15 @@ def _iou_(test_poly, truth_poly):
         intersection_result = test_poly.intersection(truth_poly)
         intersection_area = intersection_result.area
         union_area = test_poly.union(truth_poly).area
-        return (intersection_area / union_area), \
-               intersection_area / test_poly.area, \
-               intersection_area / truth_poly.area
+        if union_area == 0:
+            return 0, 0, 0
+        iou = intersection_area / union_area
+        if test_poly.area==0 or truth_poly.area==0:
+            return  0, 0 ,0
+        iotest = intersection_area / test_poly.area
+        iotruth = intersection_area / truth_poly.area
+        return iou, iotest, iotruth
+
 
     except shapely.topology.TopologicalError:
         return 0, 0, 0
@@ -421,6 +427,7 @@ class InstanceSegmentationBatchPredictor(Predictor):
             mosaic_df = predicted_instances
             mosaic_df = mosaic_df[mosaic_df['polygon'].apply(len)>2]
             mosaic_df['area'] = mosaic_df.polygon.map(lambda x: Polygon(x).area)
+            mosaic_df = mosaic_df[mosaic_df['area']>0]
             mosaic_df = join_nms(mosaic_df, iou_threshold=0.5, corr_coef=0.7)
             print(f"Skipping nms (not implemented)")
             print(f"{len(mosaic_df)} predictions kept after non-max suppression")
