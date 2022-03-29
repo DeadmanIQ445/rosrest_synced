@@ -1,11 +1,12 @@
 import os
 import time
+
+import detectron2.utils.events
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.data import DatasetMapper, build_detection_test_loader, build_detection_train_loader
 from detectron2.data import transforms as T
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import COCOEvaluator
-
 import cv2
 import numpy as np
 from utils.lr_scheduler import DelayedCosineAnnealingLR
@@ -79,7 +80,6 @@ class CustomTrainer(DefaultTrainer):
 
     @classmethod
     def build_train_loader(cls, cfg):
-        print(f"Train augment: {cfg.AUGMENT}")
         return build_detection_train_loader(cfg, mapper=DatasetMapper(
             is_train=True,
             augmentations=augmentations if cfg.AUGMENT else [],
