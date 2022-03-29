@@ -93,7 +93,7 @@ class GeoTiff(object):
             for j in np.arange(0, col_num - 1, 0.5):
                 # if begin_id+i*col_num+j in self.mark:
                 #     continue
-                print(begin_id+count, self.src_path, int(i * clip_size), int((i + 1) * clip_size), int(j * clip_size), int((j + 1) * clip_size))
+                # print(begin_id+count, self.src_path, int(i * clip_size), int((i + 1) * clip_size), int(j * clip_size), int((j + 1) * clip_size))
                 clipped_image = np.array(
                     self[int(i * clip_size): int((i + 1) * clip_size), int(j * clip_size): int((j + 1) * clip_size)])
                 clipped_image = clipped_image.astype(np.int8)
@@ -140,7 +140,7 @@ class GeoTiff(object):
                 #     self.mark.append(begin_id+i*col_num+j)
                 #     continue
                 ins_list = ins_list[1:]
-                print(begin_id + c, self.src_path, len(ins_list), int(i * clip_size), int((i + 1) * clip_size), int(j * clip_size), int((j + 1) * clip_size))
+                # print(begin_id + c, self.src_path, len(ins_list), int(i * clip_size), int((i + 1) * clip_size), int(j * clip_size), int((j + 1) * clip_size))
 
                 l = 0
                 for id in range(len(ins_list)):

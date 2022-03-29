@@ -32,8 +32,8 @@ def copy_data(input_path, id, num, mark = 'train'):
         for i in range(num):
             shutil.copy(input_path + '/' + img_path + '/' + list[id[i]], input_path + '/' + mark + '/' + img_path
                         + '/' + list[id[i]])
-            print('From src: ' + img_path + '/' + list[id[i]] + ' =>dst:' + '/' + mark + '/' + img_path
-                  + '/' + list[id[i]])
+            # print('From src: ' + img_path + '/' + list[id[i]] + ' =>dst:' + '/' + mark + '/' + img_path
+            #       + '/' + list[id[i]])
             annotation_files = filter_for_annotations(input_path, ann_list, list[id[i]])
             for j in range(len(annotation_files)):
                 shutil.copy(input_path + '/' + ann_path + '/' + os.path.basename(annotation_files[j]),
