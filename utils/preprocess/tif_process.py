@@ -374,7 +374,7 @@ class GeoShaplefile(object):
             self.feature_type = geom.GetGeometryName()
 
 
-def clip_from_file(clip_size, root, img_path, shp_path):
+def clip_from_file(clip_size, root, img_path, shp_path, ROOT_DIR):
     img_list = os.listdir(root + '/' + img_path)
     n_img = len(img_list)
     pic_id = 0
@@ -383,7 +383,7 @@ def clip_from_file(clip_size, root, img_path, shp_path):
         img_id = img_list[i].split('.', 1)[0]
         pic_num = tif.clip_tif_and_shapefile(clip_size, pic_id,
                                              root + '/' + shp_path + '/' + img_id + '/' + img_id + '.shp',
-                                             root + '/dataset')
+                                             ROOT_DIR)
 
         pic_id += pic_num
 
