@@ -30,6 +30,8 @@ from tqdm import tqdm
 import rasterio
 from shapely.geometry.base import geom_factory
 from shapely.geos import lgeos
+from rasterio.plot import reshape_as_image
+
 
 class ImageEvalHook(HookBase):
     def __init__(self, trainer: DefaultTrainer, eval_period, dataset_name, seed=42, num=10, current_eval=0):
@@ -55,16 +57,18 @@ class ImageEvalHook(HookBase):
         predictor = DefaultPredictor(self._trainer.cfg)
 
         self._current_eval += 1
-        os.makedirs(f'pred_test_image/{self._current_eval}', exist_ok=True)
+        os.makedirs(f'detect_test_image/{self._current_eval}', exist_ok=True)
         os.makedirs(f'gt_test_image/{self._current_eval}', exist_ok=True)
+        os.makedirs(f'mask_test_image/{self._current_eval}', exist_ok=True)
         self._num = min(self._num, len(dataset))
         for ii, im_dict in enumerate(random.sample(dataset, self._num)):
-            im = cv2.imread(im_dict["file_name"])
-            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-            # im = im.transpose(2, 0, 1)
+            # im = cv2.imread(im_dict["file_name"])
+            with rasterio.open(im_dict['file_name']) as f:
+                im = reshape_as_image(f.read())
             outputs = predictor(im)
-            v1 = Visualizer(im[:, :, ::-1], scale=1, instance_mode=ColorMode.IMAGE_BW, metadata=metadata)
-            v2 = Visualizer(im[:, :, ::-1], scale=1, instance_mode=ColorMode.IMAGE_BW, metadata=metadata)
+
+            v1 = Visualizer(im, scale=1, metadata=metadata)
+            v2 = Visualizer(im, scale=1, metadata=metadata)
 
             v = Visualizer(
                 im[:, :, ::-1],
@@ -75,20 +79,12 @@ class ImageEvalHook(HookBase):
                 v.draw_box(box)
                 v.draw_text(str(box[:2].numpy()), tuple(box[:2].numpy()))
             v = v.get_output()
-            img = v.get_image()[:, :, ::-1]
-
-            cv2.imwrite(f'pred_test_image/{self._current_eval}/{ii}.png', img)
-
-
-            prediction: np.array = v1.draw_instance_predictions(outputs["instances"].to("cpu")).get_image()
+            img = v.get_image()
+            cv2.imwrite(f'detect_test_image/{self._current_eval}/{ii}.png', img)
+            prediction: np.array = v1.draw_instance_predictions(outputs["instances"].to("cpu")).get_image()[:, :, ::-1]
             reference: np.array = v2.draw_dataset_dict(im_dict).get_image()
-            cv2.imwrite(f'gt_test_image/{self._current_eval}/{ii}.png', prediction)
-
-
-            # prediction = np.transpose(prediction, (2, 1, 0))
-            # reference = np.transpose(reference, (2, 1, 0))
-            # united = np.concatenate((prediction, reference), axis=1)
-            # cv2.imwrite(f"prediction_reference/{self._current_eval}/{ii}.png", united)
+            cv2.imwrite(f'mask_test_image/{self._current_eval}/{ii}.png', prediction)
+            cv2.imwrite(f'gt_test_image/{self._current_eval}/{ii}.png', reference)
 
 class LossEvalHook(HookBase):
     def __init__(self, eval_period, model, data_loader):
@@ -160,7 +156,7 @@ class FullImageEvalHook(HookBase):
                  sample_size=(512,512),
                  channels='rgb',
                  overlap=0.5,
-                 input_dirs=['../data_zu/test_inp_gorny'],
+                 input_dirs=['test_inp'],
                  seed=42,
                  num=50):
         self._model = model
@@ -211,27 +207,26 @@ class FullImageEvalHook(HookBase):
             instances['geometry'] = instances['polygon'].apply(proc_row)
             del instances['polygon']
             out_path = os.path.join(self._output_dir, str(self._current_eval))
-            self._current_eval += 1
+            self._current_eval+=1
             os.makedirs(out_path, exist_ok=True)
             gpd.GeoDataFrame(instances, geometry='geometry').to_file(str(out_path))
 
     def __call__(self, x):
-        # x= cv2.cvtColor(x, cv2.COLOR_BGR2RGB)
-        orig_height, orig_width = x.transpose(1, 2, 0).shape[:2]
-        # x = cv2.resize(x, (512,512))
+        x, coords = preprocess(x.transpose(1, 2, 0))
         with torch.no_grad():
             self._model.eval()
             height, width = x.shape[:2]
-            image = torch.as_tensor(x.astype("float32"), device=self.device)
+            image = torch.as_tensor(x.astype("float32").transpose(2, 0, 1), device=self.device)
 
             inputs = {"image": image, "height": height, "width": width}
             y = self._model([inputs])
             y = y[0]['instances'].to('cpu')
             self._model.train()
-        # masks, scores, classes = postprocess(y, coords)
-        masks = y.pred_masks.numpy().astype("uint8")
-        scores = y.scores.numpy()
-        classes = y.pred_classes.numpy()
+        masks, scores, classes = postprocess(y, coords)
+        # masks = y.pred_masks.numpy().astype("uint8")
+        # scores = y.scores.numpy()
+        # classes = y.pred_classes.numpy()
+
         df = pd.DataFrame(columns=['polygon', 'class', 'score'])
 
         for ii in range(len(masks)):
@@ -240,10 +235,9 @@ class FullImageEvalHook(HookBase):
             contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             if contours:
                 polygon = max(contours, key=cv2.contourArea).reshape(-1, 2)
-                # polygon = np.array(polygon)/width * orig_width
 
                 df = df.append({
-                    "polygon":polygon,
+                    "polygon": np.array(polygon),
                     "class": classes[ii],
                     "score": scores[ii]
                 }, ignore_index=True)
@@ -287,13 +281,6 @@ def _iou_(test_poly, truth_poly):
     except shapely.topology.TopologicalError:
         return 0, 0, 0
 
-def make_valid(coords):
-    ob = Polygon(coords)
-    return ob
-    if ob.is_valid:
-        return ob
-    return ob
-
 
 def join_nms(mosaic_df: pd.DataFrame, iou_threshold, corr_coef):
     ret_boxes = []
@@ -309,8 +296,6 @@ def join_nms(mosaic_df: pd.DataFrame, iou_threshold, corr_coef):
             poly_m = b_m['polygon']
             poly_i = i['polygon']
             iou, poly_m_inter, poly_i_inter = _iou_(poly_m, poly_i)
-            if iou > 0:
-                iou = iou
             if poly_m_inter > corr_coef:
                 flag = False
                 break

@@ -33,9 +33,9 @@ def main(hparam: argparse.Namespace):
     cfg.SOLVER.MAX_ITER = get_num_iterations(epochs=hparam.epochs,
                                              batch_size=hparam.batch_size,
                                              num_train=get_num_train_image(hparam.dataset_path))
-    cfg.TEST.EVAL_PERIOD = cfg.SOLVER.MAX_ITER//(hparam.epochs//10)
+    cfg.TEST.EVAL_PERIOD = cfg.SOLVER.MAX_ITER//(hparam.epochs//0.5)
 
-    print(f"Max iter: {cfg.SOLVER.MAX_ITER}")
+    print(f"Max iter: {cfg.SOLVER.MAX_ITER}, Eval Period: {cfg.TEST.EVAL_PERIOD}")
 
     register_dataset(hparam.dataset_path)
 
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_path', type=Path, default='/home/ari/fixed_20220222/dataset', help="Path to dataset")
     parser.add_argument('--weights', type=str, default='', help="Resume training with pretrained weights.")
     # parser.add_argument('--weights', type=str, default='', help="Resume training with pretrained weights.")
-    parser.add_argument('--lr', type=float, default=0.003, help="learning rate")
+    parser.add_argument('--lr', type=float, default=0.0005, help="learning rate")
     parser.add_argument("--batch-size", type=int, help="Batch size", default=4)
     parser.add_argument('--epochs', type=int, help="Num epochs", default=300)
     parser.add_argument('--num_workers', type=int, help="Num workers", default=4)

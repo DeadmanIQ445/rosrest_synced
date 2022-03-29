@@ -57,7 +57,7 @@ class CustomTrainer(DefaultTrainer):
         hooks.insert(-1, FullImageEvalHook(
             trainer=self,
             model=self.model,
-            eval_period=self.cfg.TEST.EVAL_PERIOD/4,
+            eval_period=self.cfg.TEST.EVAL_PERIOD,
             dataset_name=self.cfg.DATASETS.TEST[0],
             current_eval=self.iter,
             sample_size=self.cfg.PATCH,
