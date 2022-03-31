@@ -147,9 +147,8 @@ class LossEvalHook(HookBase):
 
 
 class FullImageEvalHook(HookBase):
-    def __init__(self, trainer: DefaultTrainer,
+    def __init__(self,
                  eval_period,
-                 dataset_name,
                  model,
                  output_dir,
                  current_eval,
@@ -160,9 +159,7 @@ class FullImageEvalHook(HookBase):
                  seed=42,
                  num=50):
         self._model = model
-        self._trainer = trainer
         self._period = eval_period
-        self._dataset = dataset_name
         self._seed = seed
         self._num = num
         self._sample_size = sample_size

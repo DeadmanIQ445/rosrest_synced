@@ -25,10 +25,6 @@ augmentations = [
     T.RandomSaturation(0.9, 1),
 ]
 
-# augmentations = [
-#     T.Resize(512)
-# ]
-
 
 class CustomTrainer(DefaultTrainer):
     def build_hooks(self):
@@ -56,10 +52,8 @@ class CustomTrainer(DefaultTrainer):
             dataset_name=self.cfg.DATASETS.TEST[0]
         ))
         hooks.insert(-1, FullImageEvalHook(
-            trainer=self,
             model=self.model,
             eval_period=self.cfg.TEST.EVAL_PERIOD,
-            dataset_name=self.cfg.DATASETS.TEST[0],
             current_eval=self.iter,
             sample_size=self.cfg.PATCH,
             input_dirs=['test_inp'],

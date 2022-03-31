@@ -32,7 +32,6 @@ def main(hparam: argparse.Namespace):
     ch = logging.StreamHandler()
     logger.addHandler(ch)
     logger.setLevel(logging.INFO)
-
     assert hparam.config.is_file(), f"Config does not exists: {str(hparam.config)}!"
 
     cfg = get_cfg()
