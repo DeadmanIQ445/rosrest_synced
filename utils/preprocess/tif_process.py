@@ -33,7 +33,7 @@ class GeoTiff(object):
         self.dataset = gdal.Open(tif_path)
         self.bands_count = self.dataset.RasterCount
         # get each band
-        self.bands = [self.dataset.GetRasterBand(i + 1) for i in range(self.bands_count)]
+        self.bands = [self.dataset.GetRasterBand(i + 1) for i in range(3)]
         self.col = self.dataset.RasterXSize
         self.row = self.dataset.RasterYSize
         self.geotransform = self.dataset.GetGeoTransform()
