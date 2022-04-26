@@ -1,6 +1,7 @@
 import argparse
 from datetime import datetime
 from pathlib import Path
+import os
 
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
@@ -59,8 +60,7 @@ def main(hparam: argparse.Namespace):
     config_name = str(hparam.config).split(r"/")[1]
     folder_name = f"{cfg.PATCH[0]}_{current_time}_{config_name}_{hparam.batch_size}_{hparam.lr}_{str(hparam.augment)}_{hparam.epochs}_cosine_lr"
     output_folder = Path("./output") / folder_name
-    if not output_folder.is_dir():
-        output_folder.mkdir()
+    os.makedirs(output_folder, exist_ok=True)
 
     cfg.OUTPUT_DIR = str(output_folder)
     logger.info(f"Saving folder: {cfg.OUTPUT_DIR}")
