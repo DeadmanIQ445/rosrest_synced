@@ -9,10 +9,15 @@ from detectron2.modeling import build_model
 from utils.validation import FullImageEvalHook
 import torch
 
+import os
+import glob
+from contextlib import suppress
+from detectron2.utils.logger import setup_logger
 import warnings
 warnings.filterwarnings("ignore")
-
+from f1_util import get_f1_score
 def main(hparam: argparse.Namespace):
+    logger = setup_logger(output='logs/test.txt', name=__name__)
     if hparam.model_path =='':
         return None
     device = (torch.device('cuda') if torch.cuda.is_available()
@@ -30,14 +35,26 @@ def main(hparam: argparse.Namespace):
     DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
     model.eval()
     model = model.to(device=device)
-    pred = FullImageEvalHook(
-            model=model,
-            eval_period=100,
-            current_eval=1,
-            sample_size=(1024,1024),
-            input_dirs=['test_inp'],
-            output_dir="/home/ari/test_image")
-    pred._do_image_logging()
+    for i in glob.glob('/home/ari/data/ZU/fixed_20220222/test/spltted/*/'):
+        input = i[:-1]
+        logger.info(input)
+        out = os.path.join("/home/ari/data/zu/pred/",input.split('/')[-1])
+        pred = FullImageEvalHook(
+                model=model,
+                eval_period=100,
+                current_eval=1,
+                sample_size=(1256,1256),
+                overlap=0.5,
+                # input_dirs=['/home/ari/data/ZU/fixed_20220222/test/spltted/perm_nti_cofp_209'],
+                input_dirs=[input],
+                output_dir=out)
+        pred._do_image_logging()
+        try:
+            logger.info(get_f1_score(input+'.geojson', out+'.geojson', "vector",True, False,'rtree'))
+        except AttributeError:
+            pass
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -51,7 +68,4 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', type=str, default='/home/ari/model_1024/model_best.pth')
 
     args = parser.parse_args()
-
-    print(args)
-
     main(hparam=args)

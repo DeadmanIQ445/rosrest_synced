@@ -169,7 +169,7 @@ class FullImageEvalHook(HookBase):
         self._output_dir = output_dir
         self._current_eval = current_eval
         self.device = torch.device('cuda')
-        self.channels = ('BLU', 'GRN', 'RED')
+        self.channels = ('RED', 'GRN', 'BLU')
 
     def after_step(self):
         next_iter = self.trainer.iter + 1
@@ -203,10 +203,15 @@ class FullImageEvalHook(HookBase):
         else:
             instances['geometry'] = instances['polygon'].apply(proc_row)
             del instances['polygon']
-            out_path = os.path.join(self._output_dir, str(self._current_eval))
+            out_path = os.path.join(self._output_dir,
+                                    str(datetime.datetime.now().strftime("%H:%M:%S")
+                                        + '_' + str(self._current_eval)))
             self._current_eval+=1
             os.makedirs(out_path, exist_ok=True)
-            gpd.GeoDataFrame(instances, geometry='geometry').to_file(str(out_path))
+            gp = gpd.GeoDataFrame(instances, geometry='geometry')
+            gp = gp.set_crs(band_collection.crs)
+            gp.to_file(str(out_path))
+            gp.to_file(self._output_dir+'.geojson', driver='GeoJSON')
 
     def __call__(self, x):
         x, coords = preprocess(x.transpose(1, 2, 0))
@@ -397,7 +402,7 @@ class InstanceSegmentationBatchPredictor(Predictor):
         predicted_instances = pd.concat(predicted_instances)
 
         # Confidence interval
-        predicted_instances = predicted_instances[predicted_instances.score > 0.5]
+        # predicted_instances = predicted_instances[predicted_instances.score > 0.5]
 
         # Non-max supression for overlapping boxes among window
         if self.overlap == 0:
@@ -411,7 +416,6 @@ class InstanceSegmentationBatchPredictor(Predictor):
             mosaic_df['area'] = mosaic_df.polygon.map(lambda x: Polygon(x).area)
             mosaic_df = mosaic_df[mosaic_df['area']>0]
             mosaic_df = join_nms(mosaic_df, iou_threshold=0.5, corr_coef=0.7)
-            print(f"Skipping nms (not implemented)")
             print(f"{len(mosaic_df)} predictions kept after non-max suppression")
             mosaic_df = pd.DataFrame(mosaic_df)
             mosaic_df = mosaic_df.reset_index()
