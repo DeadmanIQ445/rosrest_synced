@@ -25,9 +25,10 @@ def main(hparam: argparse.Namespace):
     # TODO: cfg to a separate file or store with model weights
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"))
-    cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.6
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
+    cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.55
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.75
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
+    cfg.TEST.AUG.ENABLED = True
     cfg.MODEL.WEIGHTS = str(hparam.model_path)
     cfg.MODEL.DEVICE = device.type
     model = build_model(cfg)
@@ -35,6 +36,7 @@ def main(hparam: argparse.Namespace):
     DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
     model.eval()
     model = model.to(device=device)
+    scores = []
     for i in glob.glob('/home/ari/data/ZU/fixed_20220222/test/spltted/*/'):
         input = i[:-1]
         logger.info(input)
@@ -50,9 +52,12 @@ def main(hparam: argparse.Namespace):
                 output_dir=out)
         pred._do_image_logging()
         try:
-            logger.info(get_f1_score(input+'.geojson', out+'.geojson', "vector",True, False,'rtree'))
+            score = get_f1_score(input+'.geojson', out+'.geojson', "vector",True, False,'rtree')
+            logger.info(score)
+            scores.append(score)
         except AttributeError:
             pass
+    logger.info(f'Average F1: {sum(scores)/len(scores)}')
 
 
 

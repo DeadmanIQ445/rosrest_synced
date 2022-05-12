@@ -415,9 +415,10 @@ class InstanceSegmentationBatchPredictor(Predictor):
             mosaic_df = mosaic_df[mosaic_df['polygon'].apply(len)>2]
             mosaic_df['area'] = mosaic_df.polygon.map(lambda x: Polygon(x).area)
             mosaic_df = mosaic_df[mosaic_df['area']>0]
-            mosaic_df = join_nms(mosaic_df, iou_threshold=0.5, corr_coef=0.7)
+            mosaic_df = join_nms(mosaic_df, iou_threshold=0.7, corr_coef=0.7)
             print(f"{len(mosaic_df)} predictions kept after non-max suppression")
             mosaic_df = pd.DataFrame(mosaic_df)
+            # mosaic_df = mosaic_df[mosaic_df['score']>0.5]
             mosaic_df = mosaic_df.reset_index()
 
         return mosaic_df
