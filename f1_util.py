@@ -135,7 +135,8 @@ def objectwise_f1_score(groundtruth_polygons: List[Polygon],
                         predicted_polygons: List[Polygon],
                         method='rtree',
                         v: bool=False,
-                        multiproc: bool=True):
+                        multiproc: bool=True,
+                        logger=None):
     """
     Measures objectwise f1-score for two sets of polygons.
     The algorithm description can be found on
@@ -176,18 +177,25 @@ def objectwise_f1_score(groundtruth_polygons: List[Polygon],
         raise Exception('Unknown method: ' + method)
     # to avoid zero-division
     a = list(map(_has_match_rtree, (dumps(polygon) for polygon in predicted_polygons)))
-    print(sum(a)/len(a))
+    if logger:
+        logger.info(f"Accuracy: {sum(a)/len(a)}")
+    else:
+        print(sum(a)/len(a))
     if tp == 0:
         return 0.
     fp = len(predicted_polygons) - tp
     fn = len(groundtruth_polygons) - tp
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
-    print(precision, recall)
+    if logger:
+        logger.info(f"Precision: {precision}, Recall: {recall}")
+    else:
+        print(precision, recall)
+
     return 2 * (precision * recall) / (precision + recall)
 
 
-def get_f1_score(groundtruth_path, predicted_path, format_, v, multiproc, method):
+def get_f1_score(groundtruth_path, predicted_path, format_, v, multiproc, method,logger=None):
 
     if format_ == 'raster':
         groundtruth_image = Image.open(groundtruth_path)
@@ -211,7 +219,7 @@ def get_f1_score(groundtruth_path, predicted_path, format_, v, multiproc, method
 
         gt_polygons = get_polygons(gt)
         pred_polygons = get_polygons(pred)
-        score = objectwise_f1_score(gt_polygons, pred_polygons, v=v, method=method, multiproc=multiproc)
+        score = objectwise_f1_score(gt_polygons, pred_polygons, v=v, method=method, multiproc=multiproc, logger=logger)
         
     return score
 

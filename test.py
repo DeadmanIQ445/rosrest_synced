@@ -52,7 +52,7 @@ def main(hparam: argparse.Namespace):
                 output_dir=out)
         pred._do_image_logging()
         try:
-            score = get_f1_score(input+'.geojson', out+'.geojson', "vector",True, False,'rtree')
+            score = get_f1_score(input+'.geojson', out+'.geojson', "vector",True, False,'rtree', logger)
             logger.info(score)
             scores.append(score)
         except AttributeError:
